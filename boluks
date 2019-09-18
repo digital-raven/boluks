@@ -1,0 +1,307 @@
+#!/usr/bin/env bash
+################################################################################
+# Script to help manage luks and veracrypt volumes.
+#
+# License
+#
+# Copyright (C) 2019 Bo Cimino (ciminobo@protonmail.com)
+#
+# boluks is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
+# iterates through instances of provided prefix until ${prefix}${i} is
+# available. returns the basename.
+function get_numfile
+{
+    local prefix="$1"
+
+    for i in $(seq 1 255)
+    do
+        if [ ! -e "${prefix}${i}" ]
+        then
+            echo "$(basename "${prefix}${i}")"
+            return 0
+        fi
+    done
+
+    echo ""
+    return 1
+}
+
+function usage
+{
+echo "\
+usage: boluks [option]... operation [args]...
+
+This program must be run as root.
+
+Operation can be one of the following
+
+  init device           Initialize a volume. Will not mount.
+  
+  open device           Open and mount a volume.
+  
+  close [num]...        Close the mounted volume numbers.
+
+Options:
+
+  -v, --veracrypt       Perform operation on veracrypt volume. Only applicable
+                        for open and close.
+
+  -f fstype             Choose filesystem when initializing new volumes.
+                        Default is ext4.
+
+  -V, --version         Print the version of boluks.
+
+  -h, --help            Print this help message.
+"
+}
+
+# Transform long opts to short
+for arg in "$@"
+do
+    shift
+    case "$arg" in
+        "--veracrypt")
+            set -- "$@" "-v"
+            ;;
+        "--version")
+            set -- "$@" "-V"
+            ;;
+        "--help")
+            set -- "$@" "-h"
+            ;;
+        *)
+            set -- "$@" "$arg"
+            ;;
+    esac
+done
+
+# Process short opts mixed with positional args
+mapbase="luksvol"
+mapdir=/dev/mapper
+mountdir=/mnt
+fs="ext4"
+cryptopts="--type luks"
+VERACRYPT="false"
+declare -a ARGS
+while [ $# -gt 0 ]
+do
+    unset OPTIND
+    unset OPTARG
+
+    while getopts "vf:Vh" OPTION; do
+        case $OPTION in
+        v)
+            VERACRYPT="true"
+            cryptopts="--type tcrypt --veracrypt"
+            mapbase="veracrypt"
+            mountdir="/media"
+            ;;
+        f)
+            fs=$OPTARG
+            which "mkfs.$fs"
+            if [ "$?" != "0" ]
+            then
+                echo "ERROR: mkfs.$fs does not exist." >&2
+                exit 1
+            fi
+            ;;
+        V)
+            echo "v1.0.0"
+            exit 0
+            ;;
+        h)
+            usage
+            exit 0
+            ;;
+        *)
+            usage
+            exit 1
+            ;;
+        esac
+    done
+
+    shift $((OPTIND-1))
+    if [ ! -z "$1" ]
+    then
+        ARGS+=("$1")
+    fi
+    shift
+done
+
+# set positional parameters to become ARGS
+set -- "${ARGS[@]}"
+
+if [[ $EUID -ne 0 ]]
+then
+    echo "ERROR: This program must be run as root." >&2
+    exit 1
+fi
+
+operation="$1"
+
+if [ -z "$operation" ]
+then
+    usage
+    exit 1
+fi
+
+if [ "$operation" == "init" ]
+then
+
+    vol="$2"
+
+    if [ "$VERACRYPT" == "true" ]
+    then
+        echo "ERROR: This program cannot initialize veracrypt volumes." >&2
+        exit 1
+    fi
+
+    if [ -z "$vol" ]
+    then    
+        usage
+        exit 1
+    fi
+
+    if [ ! -e "$vol" ]
+    then
+        echo "ERROR: $vol does not exist." >&2
+        exit 1
+    fi
+    
+    if [ -d "$vol" ]
+    then
+        echo "ERROR: $vol is a directory." >&2
+        exit 1
+    fi
+
+    mapfile="$(get_numfile $mapdir/$mapbase)"
+
+    # we shouldn't ever hit this, but better safe than sorry
+    if [ -e "$mapdir/$mapfile" ]
+    then
+        echo "ERROR: A map file already exists at $mapfile ." >&2
+        exit 1
+    fi
+
+    cryptsetup -y -v luksFormat --progress-frequency 1 "$vol"
+    if [ "$?" != "0" ]
+    then
+        echo "ERROR: Formatting $vol ." >&2
+        exit 1
+    fi
+
+    cryptsetup open $cryptopts "$vol" "$mapfile"
+
+    mkfs.$fs "$mapdir/$mapfile"
+    if [ "$?" != "0" ]
+    then
+        echo "WARN: Could not create $fs fs at $mapdir/$mapfile ." >&2
+    fi
+
+    cryptsetup close "$mapdir/$mapfile"
+
+elif [ "$operation" == "open" ]
+then
+    vol="$2"
+
+    if [ -z "$vol" ]
+    then    
+        usage
+        exit 1
+    fi
+
+    if [ ! -e "$vol" ]
+    then
+        echo "ERROR: $vol does not exist." >&2
+        exit 1
+    fi
+    
+    if [ -d "$vol" ]
+    then
+        echo "ERROR: $vol is a directory." >&2
+        exit 1
+    fi
+
+    mapfile="$(get_numfile $mapdir/$mapbase)"
+
+    # we shouldn't ever hit this, but better safe than sorry
+    if [ -e "$mapdir/$mapfile" ]
+    then
+        echo "ERROR: A map file already exists at $mapfile ." >&2
+        exit 1
+    fi
+
+    cryptsetup open $cryptopts "$vol" "$mapfile"
+    if [ "$?" != "0" ]
+    then
+        echo "ERROR: Could not open $vol at $mapdir/$mapfile." >&2
+        exit 1
+    fi
+
+    mkdir -p "$mountdir/$mapfile"
+    mount "$mapdir/$mapfile" "$mountdir/$mapfile"
+    if [ "$?" != "0" ]
+    then
+        echo "ERROR: Could not mount $mapdir/$mapfile to $mountdir/$mapfile ." >&2
+        exit 1
+    fi
+
+    echo "SUCCESS: Mounted $mapdir/$mapfile to $mountdir/$mapfile ."
+
+elif [ "$operation" == "close" ]
+then
+    volnums=""
+    while [ ! -z "$2" ]
+    do
+        volnums="$volnums $2"
+        shift
+    done
+
+    if [ -z "$volnums" ]
+    then
+        volnums="$(seq 1 255)"
+    fi
+
+    failures=""
+    nfailures=0
+    for i in $volnums
+    do
+        mapfile="$mapdir/$mapbase$i"
+        if [ -e "$mapfile" ]
+        then
+            umount "$mapfile"
+            cryptsetup close "$mapfile"
+            if [ "$?" != "0" ]
+            then
+                failures="$(printf "%s\n%s\n" "$failures" "$mapfile")"
+                nfailures=$((nfailures + 1))
+            fi
+        fi
+    done
+    
+    if [ ! "$nfailures" == "0" ]
+    then
+        echo "WARNING: $nfailures volumes failed to close:" >&2
+        echo "$failures" >&2
+    
+        exit 1
+    fi
+else
+    usage
+    exit 1
+fi
+
+exit 0
