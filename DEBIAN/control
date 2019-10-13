@@ -1,0 +1,11 @@
+Package: boluks
+Version: 1.0-1
+Section: base
+Priority: optional
+Architecture: all
+Depends: bash, cryptsetup (>= 2.0.0), util-linux
+Maintainer: Bo Cimino <ciminobo@protonmail.com>
+Changed-By: Bo Cimino <ciminobo@protonmail.com>
+Description: boluks
+ A simple wrapper for the cryptfs workflow for initializing, mounting,
+ and unmounting encrypted containers.

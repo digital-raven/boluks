@@ -29,6 +29,27 @@ To uninstall, run 'make uninstall'. This will remove the utility
 from your computer. There are no user-specific configuration files
 to worry about.
 
+You can also create a .deb package.
+
+    make
+    ./package.bash
+
+And then use your package manager to install the resulting deb. Once installed,
+run the following command to clean the repo.
+
+    make clean
+
+If you're using a non-deb based package manager, then you can use fpm to convert
+the deb into an rpm.
+
+    fpm -s deb -t rpm ./boluks*.deb
+
+## Maintenance
+
+The version as reported by the --version option is hardcoded into boluks.
+If modifying or creating a new release, ensure it is updated there as well
+as in the control / spec files.
+
 ## Copyright
 
 Copyright (C) 2019 Bo Cimino (ciminobo@protonmail.com)

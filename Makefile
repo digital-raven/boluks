@@ -17,18 +17,26 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-all:
-	gzip -c ./doc/boluks.1 > ./doc/boluks.1.gz
+MANPAGE=./doc/boluks.1.gz
+
+BINDIR=$(PREFIX)/usr/bin
+MANDIR=$(PREFIX)/usr/local/share/man/man1
+
+all: $(MANPAGE)
+
+$(MANPAGE): 
+	gzip -c ./doc/boluks.1 > $(MANPAGE)
 
 install:
 	@ cat NOTICE
-	@ install -v -m 755 -o root ./boluks /usr/bin/
-	@ install -v -d -o root /usr/local/share/man/man1
-	@ install -v -m 644 -o root ./doc/boluks.1.gz /usr/local/share/man/man1/
+	@ install -v -d $(BINDIR)
+	@ install -v -m 755 ./boluks $(BINDIR)
+	@ install -v -d $(MANDIR)
+	@ install -v -m 644 ./doc/boluks.1.gz $(MANDIR)
 
 uninstall:
 	rm /usr/bin/boluks
 	rm /usr/local/share/man/man1/boluks.1.gz
 
 clean:
-	rm -f ./doc/boluks.1.gz
+	rm -rf ./doc/boluks.1.gz boluks_*.deb boluks_*/
