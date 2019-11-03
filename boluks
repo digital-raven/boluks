@@ -119,7 +119,7 @@ do
             fi
             ;;
         V)
-            echo "v1.0.0"
+            echo "v1.1.0"
             exit 0
             ;;
         h)
@@ -288,6 +288,15 @@ then
             then
                 failures="$(printf "%s\n%s\n" "$failures" "$mapfile")"
                 nfailures=$((nfailures + 1))
+                continue
+            fi
+
+            mountpoint=$mountdir/$mapbase$i
+            if [ ! "$(ls -A "$mountpoint" | wc -l)" == "0" ]
+            then
+                echo "WARN: Not removing $mountpoint - it is not empty."
+            else
+                rm -r "$mountpoint"
             fi
         fi
     done
