@@ -1,3 +1,4 @@
 doc/boluks.1.gz
 boluks_*/
 boluks_*.deb
+*.swp
