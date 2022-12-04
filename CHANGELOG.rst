@@ -6,9 +6,22 @@ All notable changes to boluks will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
+[unreleased]
+============
+Added some backwards-compatible features. Also undid the automatic removal
+of directories upon unmounting.
+
+Added
+-----
+- Devices may be mounted to custom directories. The mountpoint name is still
+  hardcoded, but the parent directory of the mountpoint may be selected.
+
+Changed
+-------
+- boluks will no longer remove directories when unmounting.
+
 [release-1.1.0] - 2019-11-03
 ============================
-First official release of boluks.
 
 Added
 -----

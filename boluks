@@ -50,7 +50,7 @@ Operation can be one of the following
 
   init device           Initialize a volume. Will not mount.
   
-  open device           Open and mount a volume.
+  open device [dir]     Open and mount a volume.
   
   close [num]...        Close the mounted volume numbers.
 
@@ -235,6 +235,11 @@ then
         exit 1
     fi
 
+    if [ ! -z "$3" ]
+    then
+        mountdir="$3"
+    fi
+
     mapfile="$(get_numfile $mapdir/$mapbase)"
 
     # we shouldn't ever hit this, but better safe than sorry
@@ -289,14 +294,6 @@ then
                 failures="$(printf "%s\n%s\n" "$failures" "$mapfile")"
                 nfailures=$((nfailures + 1))
                 continue
-            fi
-
-            mountpoint=$mountdir/$mapbase$i
-            if [ ! "$(ls -A "$mountpoint" | wc -l)" == "0" ]
-            then
-                echo "WARN: Not removing $mountpoint - it is not empty."
-            else
-                rm -r "$mountpoint"
             fi
         fi
     done

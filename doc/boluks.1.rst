@@ -45,9 +45,10 @@ You may specify one operation.
         Format an existing file as a luks volume. *device* can be a regular file,
         or point to a drive's partition.
 
-**open** *device*
-        Map and mount an encrypted container. Luks volumes are mounted to
-        */mnt/luksvol*, and veracrypt volumes are mounted to */media/veracrypt*.
+**open** *device* [*dir*]
+        Map and mount an encrypted container. Default mount locations are
+        */mnt/luksvol* for luks volumes, and */media/veracrypt* for veracrypt
+        volumes, but a specific directory may also be provided.
 
 **close** [*num*]...
         Close the numbered volumes. If num is not provided, then boluks will attempt
