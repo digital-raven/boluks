@@ -19,6 +19,7 @@ Added
 Changed
 -------
 - boluks will no longer remove directories when unmounting.
+- boluks is now distributed under the terms of the GNU GPLv2.
 
 [release-1.1.0] - 2019-11-03
 ============================
