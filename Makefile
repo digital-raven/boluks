@@ -25,7 +25,7 @@ MANDIR=$(PREFIX)/usr/local/share/man/man1
 all: $(MANPAGE)
 
 $(MANPAGE): 
-	gzip -c ./doc/boluks.1 > $(MANPAGE)
+	make -C doc
 
 install:
 	@ cat NOTICE
