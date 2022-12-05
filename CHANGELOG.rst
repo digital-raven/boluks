@@ -6,8 +6,8 @@ All notable changes to boluks will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
-[unreleased]
-============
+[release-1.2.0] - 2022-12-04
+============================
 Added some backwards-compatible features. Also undid the automatic removal
 of directories upon unmounting.
 
