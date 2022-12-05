@@ -21,21 +21,13 @@ workflow is centered around cryptsetup, this utility can handle entire drives
 as well as regular files.
 
 This tool will automatically detect the appropriate name and mount point for
-any new volumes you open. All devices are mapped in /dev/mapper, and luks
-volumes will be mounted in \fI/mnt/luksvol*\fR, while veracrypt volumes will be
-mounted in \fI/media/veracrypt*\fR . This is to remain compatible with the
-official veracrypt program distributed by her developers.
+any new volumes you open. All devices are mapped in /dev/mapper, and volumes
+will be mounted in /mnt/boluks* by default.
 
 Map numbers are chosen naively. boluks will count from 1 to 255 until a
-filename is available in /dev/mapper. eg. /dev/mapper/luksvol1 will be given
-to the first luks volume that is mounted. Numberings will become available
+filename is available in /dev/mapper. eg. /dev/mapper/boluks1 will be given
+to the first volume that is mounted. Numberings will become available
 again after the respective volume(s) are unmounted.
-
-This program is designed to be simple - not flexible. You cannot choose custom
-mount points, for example. It is a simple wrapper around the workflow the
-developer found himself most often performing - sequential initialization,
-mount, and unmount operations. There are no configuration files to keep track
-of, and the options are limited so that they are memorable.
 
 OPERATIONS
 ==========

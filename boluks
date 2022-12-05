@@ -51,19 +51,16 @@ Operation can be one of the following
 
   init device           Initialize a volume. Will not mount.
 
-  open device [dir]     Open and mount a volume.
+  open device [dir]     Open and mount a luks or veracrypt volume.
 
   close [num]...        Close the mounted volume numbers.
 
 Options:
 
-  -v, --veracrypt       Perform operation on veracrypt volume. Only applicable
-                        for open and close.
-
   -f fstype             Choose filesystem when initializing new volumes.
                         Default is ext4.
 
-  -V, --version         Print the version of boluks.
+  --version             Print the version of boluks.
 
   -h, --help            Print this help message.
 "
@@ -74,9 +71,6 @@ for arg in "$@"
 do
     shift
     case "$arg" in
-        "--veracrypt")
-            set -- "$@" "-v"
-            ;;
         "--version")
             set -- "$@" "-V"
             ;;
@@ -90,26 +84,18 @@ do
 done
 
 # Process short opts mixed with positional args
-mapbase="luksvol"
+mapbase="boluks"
 mapdir=/dev/mapper
 mountdir=/mnt
 fs="ext4"
-cryptopts="--type luks"
-VERACRYPT="false"
 declare -a ARGS
 while [ $# -gt 0 ]
 do
     unset OPTIND
     unset OPTARG
 
-    while getopts "vf:Vh" OPTION; do
+    while getopts "f:Vh" OPTION; do
         case $OPTION in
-        v)
-            VERACRYPT="true"
-            cryptopts="--type tcrypt --veracrypt"
-            mapbase="veracrypt"
-            mountdir="/media"
-            ;;
         f)
             fs=$OPTARG
             which "mkfs.$fs"
@@ -164,12 +150,6 @@ then
 
     vol="$2"
 
-    if [ "$VERACRYPT" == "true" ]
-    then
-        echo "ERROR: This program cannot initialize veracrypt volumes." >&2
-        exit 1
-    fi
-
     if [ -z "$vol" ]
     then
         usage
@@ -204,6 +184,7 @@ then
         exit 1
     fi
 
+    cryptopts="--type luks"
     cryptsetup open $cryptopts "$vol" "$mapfile"
 
     mkfs.$fs "$mapdir/$mapfile"
@@ -248,6 +229,15 @@ then
     then
         echo "ERROR: A map file already exists at $mapfile ." >&2
         exit 1
+    fi
+
+    # Determine if the volume is luks or veracrypt
+    cryptsetup isLuks "$vol"
+    if [ "$?" == "0" ]
+    then
+        cryptopts="--type luks"
+    else
+        cryptopts="--type tcrypt --veracrypt"
     fi
 
     cryptsetup open $cryptopts "$vol" "$mapfile"
